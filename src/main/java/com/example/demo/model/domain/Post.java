@@ -3,6 +3,10 @@ package com.example.demo.model.domain;
 import java.time.LocalDateTime;
 import jakarta.persistence.*;
 import lombok.Data;
+import java.util.ArrayList;
+import java.util.List;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 @Entity // 게시글엔티티: posts 테이블
 @Table(name = "posts")
@@ -28,4 +32,9 @@ public class Post {
     
     @Column(nullable = false) // 조회수(연습문제에서사용)
     private int viewCount = 0;
+
+    // 글1개→ 댓글여러개(1 : N). 글을지우면댓글도함께지운다
+    @OneToMany(mappedBy = "post", cascade = CascadeType.REMOVE) // 외래키는Comment.post 가관리
+    @ToString.Exclude @EqualsAndHashCode.Exclude // 글→ 댓글→ 글… 무한반복방지
+    private List<Comment> comments = new ArrayList<>();
 }
