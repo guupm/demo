@@ -1,6 +1,7 @@
 package com.example.demo.model.service;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -25,6 +26,8 @@ public class PostService {
     private PostRepository postRepository;
     @Autowired
     private MemberRepository memberRepository;
+    @Autowired // [11주차] 단계 2 : 업로드 파일 저장소 (제공 코드)
+    private FileStore fileStore;
     public List<Post> findAll() { // 전체목록(최신글이위로)
         return postRepository.findAll(Sort.by(Sort.Direction.DESC, "id"));
     }
@@ -38,10 +41,16 @@ public class PostService {
         post.setContent(form.getContent());
         post.setAuthor(author); // 작성자는화면이아니라서버가정한다
         post.setCreatedAt(LocalDateTime.now());
+        post.setCapacity(form.getCapacity()); // [11주차] 단계 1 : 정원 (비우면 null = 일반 글)
+        post.setPosterFile(fileStore.save(form.getPoster())); // [11주차] 단계 2 : 포스터 저장 → 파일 이름 (없으면 null)
         return postRepository.save(post); // INSERT
     }
 
     private void validate(PostForm form) { // 빈값검사(5주차회원가입과같은방식)
+        // [11주차] 단계 1 : 모집 인원은 1~100명
+        if (form.getCapacity() != null && (form.getCapacity() < 1 || form.getCapacity() > 100)) {
+        throw new IllegalArgumentException("모집 인원은 1~100명으로 입력하세요.");
+        }
         if (form.getTitle() == null || form.getTitle().isBlank()
                 || form.getContent() == null || form.getContent().isBlank()) {
             throw new IllegalArgumentException("제목과내용을모두입력하세요.");
@@ -66,6 +75,11 @@ public class PostService {
             return postRepository.findAll(pageable);
         }
         return postRepository.search(keyword.trim(), pageable); // 검색결과도10개씩
+    }
+
+    // [11주차] 단계3 : 바구니에담긴글들(번호목록으로한번에)
+    public List<Post> findAllById(Collection<Long> ids) {
+        return postRepository.findAllById(ids); // SELECT ... WHERE id IN (?, ?, ?)
     }
 
     public Post findById(Long id) { // 글1개(없으면404 → templates/error/404.html)
